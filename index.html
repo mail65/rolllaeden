@@ -511,10 +511,14 @@ async function loadStatus() {
 async function loadEvents() {
   try {
     const data = await apiFetch("/api/events");
-    const ev = data.events?.[0];
-    if (ev) {
-      document.getElementById("eventDetail").textContent =
-        `${ev.name} — ${ev.date === new Date().toISOString().slice(0,10) ? "Heute" : "Morgen"} ${ev.time} (☀️ ${ev.sunrise})`;
+    const el = document.getElementById("eventDetail");
+    if (data.events && data.events.length > 0) {
+      const today = new Date().toISOString().slice(0,10);
+      const lines = data.events.map(ev => {
+        const day = ev.date === today ? "Heute" : "Morgen";
+        return `${ev.icon} ${day} ${ev.time} — ${ev.name}`;
+      });
+      el.innerHTML = lines.join("<br>");
     }
   } catch (e) { /* silent */ }
 }
