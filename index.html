@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>🏠 Rollläden</title>
+  <style>
+    :root {
+      --bg:           #0f0f12;
+      --card:         #1c1c22;
+      --card2:        #25252d;
+      --border:       rgba(255,255,255,0.08);
+      --accent:       #4f8ef7;
+      --accent-glow:  rgba(79,142,247,0.3);
+      --green:        #34c759;
+      --orange:       #ff9f0a;
+      --red:          #ff453a;
+      --text:         #f5f5f7;
+      --subtext:      #8e8e93;
+      --bar-bg:       rgba(255,255,255,0.1);
+      --radius:       16px;
+      --radius-sm:    10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { background: var(--bg); }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+      padding-bottom: 32px;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(15,15,18,0.85);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .header-time {
+      font-size: 14px;
+      color: var(--subtext);
+      font-variant-numeric: tabular-nums;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      display: inline-block;
+      margin-right: 6px;
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+    .status-dot.error { background: var(--red); box-shadow: 0 0 6px var(--red); animation: none; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.5; }
+    }
+
+    /* ── Layout ─────────────────────────────── */
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px 16px 0;
+    }
+
+    /* ── Next Event Card ─────────────────────── */
+    .event-card {
+      background: linear-gradient(135deg, rgba(79,142,247,0.15), rgba(79,142,247,0.05));
+      border: 1px solid rgba(79,142,247,0.3);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .event-icon { font-size: 24px; flex-shrink: 0; }
+    .event-text { flex: 1; }
+    .event-title { font-size: 13px; color: var(--subtext); margin-bottom: 2px; }
+    .event-detail { font-size: 15px; font-weight: 600; color: var(--accent); }
+
+    /* ── Section ─────────────────────────────── */
+    .section {
+      margin-bottom: 24px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--subtext);
+    }
+    .section-icon { font-size: 16px; margin-right: 6px; }
+
+    /* Room action bar */
+    .room-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .room-btn {
+      flex: 1;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 4px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+    }
+    .room-btn:active, .room-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: scale(0.97);
+    }
+    .room-btn.open   { color: var(--green); }
+    .room-btn.lueft  { color: var(--orange); }
+    .room-btn.close  { color: var(--red); }
+
+    /* ── Blind Card ──────────────────────────── */
+    .blind-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .blind-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      transition: transform 0.1s ease;
+    }
+    .blind-card.loading { opacity: 0.6; }
+
+    .blind-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .blind-label {
+      font-size: 16px;
+      font-weight: 600;
+      min-width: 52px;
+    }
+    .blind-mid { flex: 1; }
+    .blind-pct {
+      font-size: 13px;
+      color: var(--subtext);
+      margin-bottom: 5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .bar-track {
+      height: 6px;
+      background: var(--bar-bg);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      background: linear-gradient(90deg, var(--accent), #7eb3ff);
+    }
+    .blind-btns {
+      display: flex;
+      gap: 6px;
+    }
+    .blind-btn {
+      width: 38px; height: 38px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--text);
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .blind-btn:active { transform: scale(0.9); }
+    .blind-btn.up:hover     { background: var(--green);  border-color: var(--green);  }
+    .blind-btn.lueft:hover  { background: var(--orange); border-color: var(--orange); }
+    .blind-btn.down:hover   { background: var(--red);    border-color: var(--red);    }
+    .blind-btn.sending {
+      animation: sending 0.5s ease infinite alternate;
+    }
+    @keyframes sending {
+      from { opacity: 0.4; }
+      to   { opacity: 1; }
+    }
+
+    /* ── All-Rooms Section ───────────────────── */
+    .all-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .all-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .all-btns { display: flex; gap: 10px; }
+    .all-btn {
+      flex: 1;
+      padding: 12px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .all-btn span { font-size: 20px; }
+    .all-btn.open  { background: rgba(52,199,89,0.15);  border-color: rgba(52,199,89,0.4);  color: var(--green); }
+    .all-btn.lueft { background: rgba(255,159,10,0.15); border-color: rgba(255,159,10,0.4); color: var(--orange); }
+    .all-btn.close { background: rgba(255,69,58,0.15);  border-color: rgba(255,69,58,0.4);  color: var(--red); }
+    .all-btn:active { transform: scale(0.95); }
+
+    /* ── Toast ───────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(40,40,50,0.95);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 999;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Refresh indicator ───────────────────── */
+    .refresh-row {
+      text-align: center;
+      margin-top: 8px;
+      color: var(--subtext);
+      font-size: 12px;
+    }
+    .spinner {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border: 2px solid var(--subtext);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <div class="header-title">🏠 Rollläden</div>
+  <div class="header-time">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="clockEl">--:--</span>
+  </div>
+</div>
+
+<!-- ── Main ── -->
+<div class="container">
+
+  <!-- Next Event -->
+  <div class="event-card" id="eventCard">
+    <div class="event-icon">⏰</div>
+    <div class="event-text">
+      <div class="event-title">Nächstes Ereignis</div>
+      <div class="event-detail" id="eventDetail">Lade…</div>
+    </div>
+  </div>
+
+  <!-- Schlafzimmer -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">🛏️</span>Schlafzimmer</div>
+      <div class="room-actions">
+        <button class="room-btn open"  onclick="controlRoom('Schlafzimmer','open')">▲ Auf</button>
+        <button class="room-btn lueft" onclick="controlRoom('Schlafzimmer','lueftung')">🌬️</button>
+        <button class="room-btn close" onclick="controlRoom('Schlafzimmer','close')">▼ Zu</button>
+      </div>
+    </div>
+    <div class="blind-list" id="room-Schlafzimmer"></div>
+  </div>
+
+  <!-- Bad -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">🚿</span>Bad</div>
+      <div class="room-actions">
+        <button class="room-btn open"  onclick="controlRoom('Bad','open')">▲ Auf</button>
+        <button class="room-btn lueft" onclick="controlRoom('Bad','lueftung')">🌬️</button>
+        <button class="room-btn close" onclick="controlRoom('Bad','close')">▼ Zu</button>
+      </div>
+    </div>
+    <div class="blind-list" id="room-Bad"></div>
+  </div>
+
+  <!-- Kinderzimmer -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">🧒</span>Kinderzimmer</div>
+      <div class="room-actions">
+        <button class="room-btn open"  onclick="controlRoom('Kinderzimmer','open')">▲ Auf</button>
+        <button class="room-btn lueft" onclick="controlRoom('Kinderzimmer','lueftung')">🌬️</button>
+        <button class="room-btn close" onclick="controlRoom('Kinderzimmer','close')">▼ Zu</button>
+      </div>
+    </div>
+    <div class="blind-list" id="room-Kinderzimmer"></div>
+  </div>
+
+  <!-- Alle Räume -->
+  <div class="all-section">
+    <div class="all-title">🏠 Alle Räume</div>
+    <div class="all-btns">
+      <button class="all-btn open"  onclick="controlAll('open')">
+        <span>☀️</span>Alle Auf
+      </button>
+      <button class="all-btn lueft" onclick="controlAll('lueftung')">
+        <span>🌬️</span>Lüftung
+      </button>
+      <button class="all-btn close" onclick="controlAll('close')">
+        <span>🌙</span>Alle Zu
+      </button>
+    </div>
+  </div>
+
+  <div class="refresh-row" id="refreshRow">
+    <span class="spinner" id="spinnerEl" style="display:none"></span>
+    <span id="refreshText">Aktualisiert gerade…</span>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────
+const CONFIG = {
+  apiUrl: "https://underlying-char-solid-come.trycloudflare.com",
+  token:  "ipM7xlWkSX_dlEtzLhBKEf9odHtBOsnJVWmdRkHMsTA",
+};
+
+// ── State ────────────────────────────────────────────────────────
+const state = { shutters: {}, loading: false, lastRefresh: null };
+const ROOM_ORDER = {
+  "Schlafzimmer": ["schlaf_links","schlaf_mitte","schlaf_rechts"],
+  "Bad":          ["bad_links","bad_mitte","bad_rechts"],
+  "Kinderzimmer": ["kids_links","kids_rechts"],
+};
+
+// ── Helpers ──────────────────────────────────────────────────────
+function authHeaders() {
+  return { "Authorization": `Bearer ${CONFIG.token}`, "Content-Type": "application/json" };
+}
+
+async function apiFetch(path, opts = {}) {
+  const url = CONFIG.apiUrl + path;
+  const res = await fetch(url, { headers: authHeaders(), ...opts });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+function toast(msg, emoji = "✅") {
+  const el = document.getElementById("toast");
+  el.textContent = emoji + " " + msg;
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2500);
+}
+
+function setStatus(ok) {
+  const dot = document.getElementById("statusDot");
+  dot.className = "status-dot" + (ok ? "" : " error");
+}
+
+function pctColor(pct) {
+  if (pct === null) return "#555";
+  if (pct >= 80) return "var(--green)";
+  if (pct >= 20) return "var(--accent)";
+  return "var(--red)";
+}
+
+// ── Clock ────────────────────────────────────────────────────────
+function tickClock() {
+  const now = new Date();
+  document.getElementById("clockEl").textContent =
+    now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+// ── Render blinds ─────────────────────────────────────────────────
+function renderBlinds() {
+  for (const [room, keys] of Object.entries(ROOM_ORDER)) {
+    const container = document.getElementById("room-" + room);
+    if (!container) continue;
+    container.innerHTML = "";
+    for (const key of keys) {
+      const s = state.shutters[key];
+      if (!s) continue;
+      const pct = s.percent !== null ? s.percent : "?";
+      const barW = s.level !== null ? Math.round(s.level * 100) : 0;
+      const card = document.createElement("div");
+      card.className = "blind-card";
+      card.id = "card-" + key;
+      card.innerHTML = `
+        <div class="blind-row">
+          <div class="blind-label">${s.label}</div>
+          <div class="blind-mid">
+            <div class="blind-pct">${pct}% offen</div>
+            <div class="bar-track">
+              <div class="bar-fill" id="bar-${key}" style="width:${barW}%; background: linear-gradient(90deg, ${pctColor(s.percent)}, ${pctColor(s.percent)}88)"></div>
+            </div>
+          </div>
+          <div class="blind-btns">
+            <button class="blind-btn up"    onclick="controlOne('${key}','open')"     title="Auf">▲</button>
+            <button class="blind-btn lueft" onclick="controlOne('${key}','lueftung')" title="Lüftung">🌬️</button>
+            <button class="blind-btn down"  onclick="controlOne('${key}','close')"    title="Zu">▼</button>
+          </div>
+        </div>`;
+      container.appendChild(card);
+    }
+  }
+}
+
+function updateBlindUI(key, level) {
+  const pct = Math.round(level * 100);
+  const bar = document.getElementById("bar-" + key);
+  const card = document.getElementById("card-" + key);
+  if (!card) return;
+  card.querySelector(".blind-pct").textContent = pct + "% offen";
+  if (bar) {
+    bar.style.width = pct + "%";
+    bar.style.background = `linear-gradient(90deg, ${pctColor(pct)}, ${pctColor(pct)}88)`;
+  }
+  if (state.shutters[key]) {
+    state.shutters[key].level = level;
+    state.shutters[key].percent = pct;
+  }
+}
+
+// ── API calls ─────────────────────────────────────────────────────
+async function loadStatus() {
+  const spinner = document.getElementById("spinnerEl");
+  const refreshText = document.getElementById("refreshText");
+  spinner.style.display = "inline-block";
+  try {
+    const data = await apiFetch("/api/status");
+    state.shutters = data.shutters;
+    state.lastRefresh = new Date();
+    renderBlinds();
+    setStatus(true);
+    const t = state.lastRefresh.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    refreshText.textContent = "Aktualisiert " + t;
+  } catch (e) {
+    console.error("Status load failed:", e);
+    setStatus(false);
+    refreshText.textContent = "⚠️ Verbindungsfehler";
+  } finally {
+    spinner.style.display = "none";
+  }
+}
+
+async function loadEvents() {
+  try {
+    const data = await apiFetch("/api/events");
+    const ev = data.events?.[0];
+    if (ev) {
+      document.getElementById("eventDetail").textContent =
+        `${ev.name} — ${ev.date === new Date().toISOString().slice(0,10) ? "Heute" : "Morgen"} ${ev.time} (☀️ ${ev.sunrise})`;
+    }
+  } catch (e) { /* silent */ }
+}
+
+async function sendControl(target, action, labelHint = "") {
+  try {
+    const data = await apiFetch("/api/control", {
+      method: "POST",
+      body: JSON.stringify({ target, action }),
+    });
+    const pct = Math.round(data.level * 100);
+    let emoji = action === "open" ? "☀️" : action === "close" ? "🌙" : "🌬️";
+    toast(`${labelHint || target}: ${pct}%`, emoji);
+    // Optimistic UI update
+    for (const [key, r] of Object.entries(data.set || {})) {
+      updateBlindUI(key, r.level);
+    }
+    setTimeout(loadStatus, 3000); // re-sync after 3s
+  } catch (e) {
+    toast("Fehler: " + e.message, "⚠️");
+    setStatus(false);
+  }
+}
+
+// ── Control actions ───────────────────────────────────────────────
+function controlOne(key, action) {
+  const s = state.shutters[key];
+  const label = s ? `${s.room} ${s.label}` : key;
+  sendControl(key, action, label);
+}
+
+function controlRoom(room, action) {
+  sendControl(room, action, room);
+}
+
+function controlAll(action) {
+  sendControl("all", action, "Alle Räume");
+}
+
+// ── Init & auto-refresh ───────────────────────────────────────────
+loadStatus();
+loadEvents();
+setInterval(loadStatus, 30_000);
+setInterval(loadEvents, 300_000);
+</script>
+</body>
+</html>
