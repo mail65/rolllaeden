@@ -454,6 +454,7 @@ function renderBlinds() {
           <div class="blind-label">${s.label}</div>
           <div class="blind-mid">
             <div class="blind-pct" style="color:${pct===0?'#ff453a':pct===100?'#34c759':'#ff9f0a'}">${pct===0?"🌙 Zu":pct===100?"☀️ Offen":"🌬️ "+pct+"%"}</div>
+            ${s.reason ? `<div style="font-size:11px;color:#8e8e93;margin-top:2px;line-height:1.3">${s.reason}</div>` : ""}
             <div class="bar-track">
               <div class="bar-fill" id="bar-${key}" style="width:${barW}%; background: linear-gradient(90deg, ${pctColor(s.percent)}, ${pctColor(s.percent)}88)"></div>
             </div>
