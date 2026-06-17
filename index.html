@@ -514,11 +514,20 @@ async function loadEvents() {
     const el = document.getElementById("eventDetail");
     if (data.events && data.events.length > 0) {
       const today = new Date().toISOString().slice(0,10);
-      const lines = data.events.map(ev => {
-        const day = ev.date === today ? "Heute" : "Morgen";
-        return `${ev.icon} ${day} ${ev.time} — ${ev.name}`;
-      });
-      el.innerHTML = lines.join("<br>");
+      // Nächstes Ereignis prominent + weitere klein darunter
+      const next = data.events[0];
+      const rest = data.events.slice(1);
+      const nextDay = next.date === today ? "Heute" : "Morgen";
+      let html = `<strong>${next.icon} ${nextDay} ${next.time} — ${next.name}</strong>`;
+      if (next.detail) html += `<br><span style="font-size:12px;color:var(--subtext)">${next.detail}</span>`;
+      if (rest.length > 0) {
+        const restLines = rest.map(ev => {
+          const day = ev.date === today ? "Heute" : "Morgen";
+          return `${ev.icon} ${day} ${ev.time} ${ev.name}`;
+        });
+        html += `<br><span style="font-size:11px;color:var(--subtext);margin-top:4px;display:block">${restLines.join(" &nbsp;·&nbsp; ")}</span>`;
+      }
+      el.innerHTML = html;
     }
   } catch (e) { /* silent */ }
 }
